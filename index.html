@@ -245,6 +245,26 @@ input[type=range]{accent-color:var(--accent);}
 .predict-table .rank-1{color:#fbbf24;font-weight:700;}
 .predict-table .rank-2{color:#94a3b8;font-weight:600;}
 .predict-table .rank-3{color:#b45309;}
+/* 당첨자 선택 */
+.predict-table tr.winner td{background:rgba(251,191,36,.18);font-weight:700;}
+.predict-table tr.winner td:first-child::before{content:'🏆 ';}
+.predict-winner-btn{background:none;border:1px solid var(--border);color:var(--dim);cursor:pointer;font-size:11px;padding:2px 6px;border-radius:10px;white-space:nowrap;transition:all .15s;}
+.predict-winner-btn:hover{border-color:#fbbf24;color:#fbbf24;}
+.predict-winner-btn.is-winner{background:rgba(251,191,36,.2);border-color:#fbbf24;color:#fbbf24;}
+/* 승부예측 댓글 */
+.predict-comment-section{margin-top:10px;padding-top:8px;border-top:1px solid var(--border);}
+.predict-comments{display:flex;flex-direction:column;gap:5px;margin-bottom:7px;max-height:140px;overflow-y:auto;}
+.predict-comment-item{background:var(--bg);border-radius:6px;padding:5px 9px;}
+.predict-comment-hdr{display:flex;align-items:center;gap:6px;margin-bottom:2px;}
+.predict-comment-author{font-size:11px;font-weight:700;color:var(--accent);}
+.predict-comment-time{font-size:10px;color:var(--dim);}
+.predict-comment-del{background:none;border:none;color:var(--dim);cursor:pointer;font-size:11px;margin-left:auto;padding:1px 3px;}
+.predict-comment-del:hover{color:#ef4444;}
+.predict-comment-body{font-size:12px;color:var(--text);}
+.predict-comment-row{display:flex;gap:5px;}
+.predict-comment-input{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:15px;color:var(--text);padding:5px 11px;font-size:12px;font-family:inherit;}
+.predict-comment-input:focus{outline:none;border-color:var(--accent);}
+.predict-comment-send{padding:5px 11px;border-radius:15px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-size:12px;font-family:inherit;}
 .predict-foot{display:flex;align-items:center;gap:6px;margin-top:8px;padding-top:6px;border-top:1px solid var(--border);font-size:11px;color:var(--dim);}
 .predict-del{background:none;border:none;color:var(--dim);cursor:pointer;font-size:13px;padding:2px 4px;border-radius:4px;margin-left:auto;}
 .predict-del:hover{color:#ef4444;}
@@ -1443,6 +1463,8 @@ function renderPredictList(){
   const sorted=[...predictItems].sort(function(a,b){return(b.ts||0)-(a.ts||0);});
   sorted.forEach(function(item){
     const card=document.createElement('div');card.className='predict-card';
+
+    // 헤더
     const hdr=document.createElement('div');hdr.className='predict-card-header';
     const ttl=document.createElement('div');ttl.className='predict-title';ttl.textContent=item.title||'';
     hdr.appendChild(ttl);
@@ -1458,23 +1480,44 @@ function renderPredictList(){
     });
     hdr.appendChild(editBtn);
     card.appendChild(hdr);
+
+    // 테이블 (점수 기준 자동 정렬 + 당첨자 선택)
     const rows=item.rows||[];
+    const winners=item.winners||{};
     const ranked=[...rows];
     const numericScores=ranked.every(function(r){return r.score===''||!isNaN(parseFloat(r.score));});
     if(numericScores)ranked.sort(function(a,b){return(parseFloat(b.score)||0)-(parseFloat(a.score)||0);});
+
     const tbl=document.createElement('table');tbl.className='predict-table';
-    tbl.innerHTML='<thead><tr><th>#</th><th>이름</th><th>점수/예측</th></tr></thead>';
+    tbl.innerHTML='<thead><tr><th>#</th><th>이름</th><th>점수/예측</th><th>당첨</th></tr></thead>';
     const tbody=document.createElement('tbody');
     ranked.forEach(function(r,i){
       const rankCls=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'';
       const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1;
+      const isWinner=!!winners[r.name];
       const tr=document.createElement('tr');
-      tr.innerHTML='<td class="'+rankCls+'">'+medal+'</td>'+
-        '<td class="'+rankCls+'">'+esc(r.name||'')+'</td>'+
-        '<td class="'+rankCls+'" style="font-weight:600;">'+esc(r.score||'-')+'</td>';
+      if(isWinner)tr.className='winner';
+      const rankTd=document.createElement('td');rankTd.className=rankCls;rankTd.textContent=medal;
+      const nameTd=document.createElement('td');nameTd.className=rankCls;nameTd.textContent=r.name||'';
+      const scoreTd=document.createElement('td');scoreTd.className=rankCls;scoreTd.style.fontWeight='600';scoreTd.textContent=r.score||'-';
+      const winTd=document.createElement('td');
+      const winBtn=document.createElement('button');
+      winBtn.className='predict-winner-btn'+(isWinner?' is-winner':'');
+      winBtn.textContent=isWinner?'🏆 당첨':'선택';
+      winBtn.addEventListener('click',function(){
+        // 당첨자 토글
+        const newWinners=Object.assign({},winners);
+        if(isWinner){delete newWinners[r.name];}
+        else{newWinners[r.name]=true;}
+        predictRef.child(item.id+'/winners').set(newWinners);
+      });
+      winTd.appendChild(winBtn);
+      tr.appendChild(rankTd);tr.appendChild(nameTd);tr.appendChild(scoreTd);tr.appendChild(winTd);
       tbody.appendChild(tr);
     });
     tbl.appendChild(tbody);card.appendChild(tbl);
+
+    // 하단 정보
     const foot=document.createElement('div');foot.className='predict-foot';
     const dt=new Date(item.ts||Date.now());
     foot.innerHTML='<span>👤 '+esc(item.author||'')+'</span><span>'+ds(dt)+'</span>';
@@ -1491,8 +1534,46 @@ function renderPredictList(){
       }
     });
     foot.appendChild(del);card.appendChild(foot);
+
+    // 댓글 섹션
+    card.appendChild(buildPredictComment(item));
     list.appendChild(card);
   });
+}
+
+// 승부예측 댓글
+function savePredictComment(itemId, text){
+  const cid='c'+Date.now();
+  predictRef.child(itemId+'/comments/'+cid).set({
+    id:cid, text, author:myName||'익명', ts:Date.now()
+  });
+}
+function deletePredictComment(itemId, cid){
+  predictRef.child(itemId+'/comments/'+cid).remove();
+}
+function buildPredictComment(item){
+  const section=document.createElement('div');section.className='predict-comment-section';
+  const comments=Object.values(item.comments||{}).sort(function(a,b){return(a.ts||0)-(b.ts||0);});
+  const clist=document.createElement('div');clist.className='predict-comments';
+  comments.forEach(function(c){
+    const ci=document.createElement('div');ci.className='predict-comment-item';
+    const hdr=document.createElement('div');hdr.className='predict-comment-hdr';
+    hdr.innerHTML='<span class="predict-comment-author">'+esc(c.author||'익명')+'</span>'+
+      '<span class="predict-comment-time">'+formatCommentTime(c.ts)+'</span>';
+    const cdel=document.createElement('button');cdel.className='predict-comment-del';cdel.textContent='✕';
+    cdel.addEventListener('click',function(){deletePredictComment(item.id,c.id);});
+    hdr.appendChild(cdel);
+    const body=document.createElement('div');body.className='predict-comment-body';body.textContent=c.text||'';
+    ci.appendChild(hdr);ci.appendChild(body);clist.appendChild(ci);
+  });
+  section.appendChild(clist);
+  const row=document.createElement('div');row.className='predict-comment-row';
+  const inp=document.createElement('input');inp.className='predict-comment-input';inp.placeholder='댓글 입력...';inp.type='text';
+  const send=document.createElement('button');send.className='predict-comment-send';send.textContent='등록';
+  send.addEventListener('click',function(){const t=inp.value.trim();if(!t)return;savePredictComment(item.id,t);inp.value='';});
+  inp.addEventListener('keydown',function(e){if(e.key==='Enter'){send.click();}});
+  row.appendChild(inp);row.appendChild(send);section.appendChild(row);
+  return section;
 }
 
 function renderPfRows(){
