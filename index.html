@@ -5,6 +5,7 @@
 <title>📝 개인 메모앱</title>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <style>
 :root{--bg:#0f172a;--panel:#1e293b;--card:#1e293b;--hover:#2d3a52;--accent:#3b82f6;--accent2:#6366f1;--text:#e2e8f0;--sub:#94a3b8;--dim:#64748b;--border:#334155;}
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -249,6 +250,18 @@ input[type=range]{accent-color:var(--accent);}
 .pf-row-hdr{display:grid;grid-template-columns:1fr 1fr auto;gap:6px;margin-bottom:4px;}
 .pf-row-hdr span{font-size:11px;color:var(--dim);padding:0 2px;}
 
+/* 읽음확인 */
+.read-badge{display:inline-flex;align-items:center;gap:2px;font-size:10px;color:var(--dim);}
+.read-check{color:#22c55e;font-size:11px;}
+.read-check.unread{color:var(--dim);}
+/* 보관함 배지 */
+.archive-badge{font-size:10px;background:rgba(99,102,241,.15);color:#a5b4fc;padding:2px 7px;border-radius:10px;border:1px solid rgba(99,102,241,.3);}
+/* 타이머 배지 */
+.timer-badge{font-size:11px;background:rgba(251,191,36,.12);color:#fbbf24;padding:2px 7px;border-radius:10px;font-weight:600;}
+.timer-badge.expired{color:#ef4444;background:rgba(239,68,68,.12);}
+/* 게시판 보관함 탭 */
+.boardtoolbar{display:flex;justify-content:flex-end;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--panel);flex-shrink:0;align-items:center;gap:8px;}
+
 /* 댓글 */
 .comment-section{margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
 .comment-title{font-size:11px;color:var(--dim);margin-bottom:6px;font-weight:600;}
@@ -416,6 +429,10 @@ input[type=range]{accent-color:var(--accent);}
 <div class="page" id="page-board">
   <div class="boardwrap">
     <div class="boardtoolbar">
+      <div class="vtabs" style="flex:1;">
+        <button class="vtab on" id="btab-all">📌 전체</button>
+        <button class="vtab" id="btab-archive">📦 보관함</button>
+      </div>
       <button class="btnadd" id="btn-open-board">+ 글쓰기</button>
     </div>
     <div class="boardlist" id="board-list"></div>
@@ -610,8 +627,47 @@ input[type=range]{accent-color:var(--accent);}
       <div id="attach-list" style="display:flex;flex-direction:column;gap:6px;"></div>
     </div>
     <div class="fr"><label class="chkl"><input type="checkbox" id="bf-blink"> ✨ 항상 깜빡이게 표시 (강조)</label></div>
+
+    <!-- 색상 선택 -->
+    <div class="fr2">
+      <div class="fr">
+        <label class="fl">배경색</label>
+        <div class="cswatches" id="bf-bgswatches"></div>
+      </div>
+      <div class="fr">
+        <label class="fl">글자색</label>
+        <div class="cswatches" id="bf-textswatches"></div>
+      </div>
+    </div>
+
+    <!-- 알람 / 타이머 -->
     <div class="fr">
-      <label class="chkl"><input type="checkbox" id="bf-pw-on" id="bf-pw-on"> 🔒 수정/삭제 비밀번호 설정</label>
+      <label class="chkl"><input type="checkbox" id="bf-alarm-on"> 🔔 알람 설정 (날짜+시각)</label>
+    </div>
+    <div id="bf-alarm-row" style="display:none;">
+      <div class="fr2">
+        <div class="fr"><label class="fl">알람 날짜</label><input class="fi" type="date" id="bf-alarm-date"></div>
+        <div class="fr"><label class="fl">알람 시각</label><input class="fi" type="time" id="bf-alarm-time"></div>
+      </div>
+    </div>
+    <div class="fr">
+      <label class="chkl"><input type="checkbox" id="bf-timer-on"> ⏱️ 타이머 설정 (카운트다운)</label>
+    </div>
+    <div id="bf-timer-row" style="display:none;">
+      <div class="fr2">
+        <div class="fr"><label class="fl">시간(시)</label><input class="fi" type="number" id="bf-timer-h" min="0" max="23" value="0" style="font-size:13px;"></div>
+        <div class="fr"><label class="fl">분</label><input class="fi" type="number" id="bf-timer-m" min="0" max="59" value="30" style="font-size:13px;"></div>
+      </div>
+    </div>
+
+    <!-- 보관/삭제 -->
+    <div class="fr" style="display:flex;gap:16px;">
+      <label class="chkl"><input type="checkbox" id="bf-archive"> 📦 보관함으로 이동</label>
+      <label class="chkl"><input type="checkbox" id="bf-trash-flag"> 🗑️ 휴지통으로 이동</label>
+    </div>
+
+    <div class="fr">
+      <label class="chkl"><input type="checkbox" id="bf-pw-on"> 🔒 수정/삭제 비밀번호 설정</label>
       <div id="bf-pw-row" style="display:none;margin-top:6px;">
         <input class="fi" type="password" id="bf-pw" placeholder="비밀번호 입력" style="font-size:13px;">
       </div>
@@ -653,6 +709,9 @@ let knownChatIds=null, knownBoardIds=null;
 let chatUnread=0, boardUnread=0;
 let curMainTab='cal';
 let editBoardId=null;
+let bfBgColor='#263046', bfTextColor='#e2e8f0';
+let boardView='all'; // 'all' | 'archive'
+let boardAlarmTimers={};
 let board2Posts=[], editBoard2Id=null;
 let predictItems=[], pfRows=[], editPredictId=null;
 let trashItems=[];
@@ -666,16 +725,98 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 
 // ── Firebase 설정 ──
 const firebaseConfig = {
-  apiKey: "AIzaSyAepmr0wJO1LV7iphp3q7iHM4D0IBChe-c",
-  authDomain: "kimbk-memo.firebaseapp.com",
-  databaseURL: "https://kimbk-memo-default-rtdb.firebaseio.com",
-  projectId: "kimbk-memo",
-  storageBucket: "kimbk-memo.firebasestorage.app",
-  messagingSenderId: "254104506838",
-  appId: "1:254104506838:web:f629b096546c7c4c84d477"
+  apiKey: "AIzaSyCyPvfNmCzf3N27nFYlW1RLRSn7xajoYO0",
+  authDomain: "kimbk-memo2.firebaseapp.com",
+  databaseURL: "https://kimbk-memo2-default-rtdb.firebaseio.com",
+  projectId: "kimbk-memo2",
+  storageBucket: "kimbk-memo2.firebasestorage.app",
+  messagingSenderId: "405004928399",
+  appId: "1:405004928399:web:b3764abc13941bb7a077fa"
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+const auth = firebase.auth();
+
+const APP_PW = '8537';
+
+// 비밀번호 확인 후 Firebase 인증 진행
+const authOverlay = document.createElement('div');
+authOverlay.id = 'auth-overlay';
+authOverlay.style.cssText = 'position:fixed;inset:0;background:#0f172a;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;';
+
+const savedPw = localStorage.getItem('app_pw');
+
+if(savedPw === APP_PW){
+  // 이미 인증된 기기 → 비번 화면 스킵, Firebase 바로 연결
+  authOverlay.innerHTML = '<div style="font-size:32px">📝</div><div style="color:#e2e8f0;font-size:15px;font-weight:600;">개인 메모앱</div><div style="color:#94a3b8;font-size:12px;" id="auth-status-msg">연결 중...</div>';
+}else{
+  // 처음 접속 → 비밀번호 입력창 표시
+  authOverlay.innerHTML =
+    '<div style="font-size:36px">🔒</div>'+
+    '<div style="color:#e2e8f0;font-size:16px;font-weight:700;">개인 메모앱</div>'+
+    '<div style="color:#94a3b8;font-size:12px;">비밀번호를 입력하세요</div>'+
+    '<input id="pw-gate-input" type="password" placeholder="비밀번호" '+
+    'style="background:#1e293b;border:1px solid #334155;border-radius:8px;color:#e2e8f0;'+
+    'padding:10px 16px;font-size:16px;width:200px;text-align:center;outline:none;">'+
+    '<button id="pw-gate-btn" '+
+    'style="background:#3b82f6;color:#fff;border:none;border-radius:8px;padding:10px 28px;'+
+    'font-size:14px;font-weight:600;cursor:pointer;">확인</button>'+
+    '<div id="pw-gate-msg" style="color:#ef4444;font-size:12px;height:16px;"></div>';
+}
+
+document.body.appendChild(authOverlay);
+
+function startFirebaseAuth(){
+  auth.onAuthStateChanged(function(user){
+    if(user){
+      const overlay=document.getElementById('auth-overlay');
+      if(overlay)overlay.remove();
+    }else{
+      const msg=document.getElementById('auth-status-msg');
+      if(msg)msg.textContent='인증 중...';
+      auth.signInAnonymously().catch(function(err){
+        const msg=document.getElementById('auth-status-msg');
+        if(msg)msg.textContent='⚠️ 연결 실패: '+err.message;
+        console.error('익명 로그인 실패:', err);
+      });
+    }
+  });
+}
+
+if(savedPw === APP_PW){
+  startFirebaseAuth();
+}else{
+  // 비밀번호 확인 버튼 이벤트
+  setTimeout(function(){
+    const input = document.getElementById('pw-gate-input');
+    const btn = document.getElementById('pw-gate-btn');
+    const msg = document.getElementById('pw-gate-msg');
+    if(!input||!btn)return;
+
+    function tryPassword(){
+      if(input.value === APP_PW){
+        localStorage.setItem('app_pw', APP_PW);
+        // 비번 화면 → 연결 중 화면으로 전환
+        authOverlay.innerHTML =
+          '<div style="font-size:32px">📝</div>'+
+          '<div style="color:#e2e8f0;font-size:15px;font-weight:600;">개인 메모앱</div>'+
+          '<div style="color:#94a3b8;font-size:12px;" id="auth-status-msg">연결 중...</div>';
+        startFirebaseAuth();
+      }else{
+        msg.textContent='❌ 비밀번호가 틀렸습니다';
+        input.value='';
+        input.focus();
+        setTimeout(function(){msg.textContent='';},2000);
+      }
+    }
+
+    btn.addEventListener('click', tryPassword);
+    input.addEventListener('keydown', function(e){
+      if(e.key==='Enter') tryPassword();
+    });
+    input.focus();
+  }, 100);
+}
 const memosRef = db.ref('memos');
 const annivsRef = db.ref('annivs');
 const chatRef = db.ref('chat');
@@ -1668,65 +1809,159 @@ function saveBoardPosts(){
 function renderBoard(){
   const list=document.getElementById('board-list');
   list.innerHTML='';
-  if(!boardPosts.length){
-    list.innerHTML='<div class="empty">📌<br><br>등록된 게시글이 없습니다<br><small style="color:var(--dim)">+ 글쓰기를 눌러 작성하세요</small></div>';
+  const items=boardPosts.filter(function(p){
+    return boardView==='archive'?p.archived:!p.archived;
+  }).sort(function(a,b){return(b.ts||0)-(a.ts||0);});
+
+  if(!items.length){
+    list.innerHTML='<div class="empty">📌<br><br>'+(boardView==='archive'?'보관된 게시글이 없습니다':'등록된 게시글이 없습니다')+'<br><small style="color:var(--dim)">+ 글쓰기를 눌러 작성하세요</small></div>';
     return;
   }
-  const sorted=[...boardPosts].sort(function(a,b){return (b.ts||0)-(a.ts||0);});
-  sorted.forEach(function(p){
+
+  const now=Date.now();
+  items.forEach(function(p){
     const post=document.createElement('div');
-    post.className='boardpost'+((p.forceBlink||flashNewBoardId===p.id)?' blink':'');
+    const isBlinking=p.forceBlink||(flashNewBoardId===p.id);
+    post.className='boardpost'+(isBlinking?' blink':'');
     post.dataset.id=p.id;
+    if(p.bgColor)post.style.background=p.bgColor;
+    if(p.textColor)post.style.color=p.textColor;
+    if(p.bgColor)post.style.borderLeftColor=p.bgColor==='#263046'?'var(--accent2)':p.bgColor;
+
+    // 제목 행
     const top=document.createElement('div');top.className='bptop';
     const ttl=document.createElement('div');ttl.className='bptitle';
+    if(p.textColor)ttl.style.color=p.textColor;
     ttl.textContent=p.title||'(제목없음)';
-    if(p.password){
-      const lk=document.createElement('span');lk.className='lock-badge';lk.textContent='🔒 보호됨';lk.style.marginLeft='6px';
-      ttl.appendChild(lk);
-    }
+    if(p.password){const lk=document.createElement('span');lk.className='lock-badge';lk.textContent='🔒';lk.style.marginLeft='6px';ttl.appendChild(lk);}
+    if(p.archived){const ab=document.createElement('span');ab.className='archive-badge';ab.textContent='📦 보관';ab.style.marginLeft='6px';ttl.appendChild(ab);}
     const acts=document.createElement('div');acts.className='bpacts';
+
+    // 읽음확인 버튼
+    const myRead=p.reads&&p.reads[sessionId];
+    const readBtn=document.createElement('button');readBtn.className='mcbtn';readBtn.title='읽음 확인';
+    const readers=Object.values(p.reads||{});
+    readBtn.innerHTML='✓<span style="font-size:10px;color:'+(readers.length>0?'#22c55e':'var(--dim)')+'">'+readers.length+'</span>';
+    readBtn.addEventListener('click',function(){
+      if(!myRead){
+        boardRef.child(p.id+'/reads/'+sessionId).set({name:myName||'익명',ts:Date.now()});
+      }else{
+        boardRef.child(p.id+'/reads/'+sessionId).remove();
+      }
+    });
+    acts.appendChild(readBtn);
+
     const eb=document.createElement('button');eb.className='mcbtn';eb.textContent='✏️';eb.title='편집';
     eb.addEventListener('click',function(){
-      if(p.password){
-        askPassword('게시글 수정을 위해 비밀번호를 입력하세요.',function(pw){
-          if(pw===p.password)doEditBoard(p.id);
-          else alert('비밀번호가 틀렸습니다.');
-        });
-      }else{doEditBoard(p.id);}
+      if(p.password){askPassword('수정 비밀번호를 입력하세요.',function(pw){
+        if(pw===p.password)doEditBoard(p.id); else alert('비밀번호가 틀렸습니다.');
+      });}else{doEditBoard(p.id);}
     });
     const db2=document.createElement('button');db2.className='mcbtn';db2.textContent='🗑️';db2.title='삭제';
     db2.addEventListener('click',function(){
-      if(p.password){
-        askPassword('게시글 삭제를 위해 비밀번호를 입력하세요.',function(pw){
-          if(pw===p.password)doDeleteBoard(p.id);
-          else alert('비밀번호가 틀렸습니다.');
-        });
-      }else{doDeleteBoard(p.id);}
+      if(p.password){askPassword('삭제 비밀번호를 입력하세요.',function(pw){
+        if(pw===p.password)doDeleteBoard(p.id); else alert('비밀번호가 틀렸습니다.');
+      });}else{doDeleteBoard(p.id);}
     });
     acts.appendChild(eb);acts.appendChild(db2);
-    top.appendChild(ttl);top.appendChild(acts);
-    post.appendChild(top);
+    top.appendChild(ttl);top.appendChild(acts);post.appendChild(top);
+
+    // 본문
     if(p.body){
       const bd=document.createElement('div');bd.className='bpbody';bd.innerHTML=p.body;
-      bd.querySelectorAll('img').forEach(function(img){
-        img.addEventListener('click',function(){openImgViewer(img.src);});
-      });
+      if(p.textColor)bd.style.color=p.textColor;
+      bd.querySelectorAll('img').forEach(function(img){img.addEventListener('click',function(){openImgViewer(img.src);});});
       post.appendChild(bd);
     }
-    const foot=document.createElement('div');foot.className='bpfoot';
-    const dt=new Date(p.ts||Date.now());
-    const dateSpan=document.createElement('span');dateSpan.textContent='🕒 '+ds(dt)+' '+p2(dt.getHours())+':'+p2(dt.getMinutes());
-    foot.appendChild(dateSpan);
-    if(p.author){const auSpan=document.createElement('span');auSpan.style.color='var(--accent)';auSpan.textContent='👤 '+p.author;foot.appendChild(auSpan);}
-    post.appendChild(foot);
-    // 첨부 링크
     const attachSec=buildAttachSection(p.attachLinks);
     if(attachSec)post.appendChild(attachSec);
-    // 댓글
-    post.appendChild(buildCommentSection('board', p));
+
+    // 하단 정보
+    const foot=document.createElement('div');foot.className='bpfoot';
+    const dt=new Date(p.ts||Date.now());
+    foot.innerHTML='<span>🕒 '+ds(dt)+' '+p2(dt.getHours())+':'+p2(dt.getMinutes())+'</span>';
+    if(p.author){const auSpan=document.createElement('span');auSpan.style.color='var(--accent)';auSpan.textContent='👤 '+p.author;foot.appendChild(auSpan);}
+
+    // 알람 배지
+    if(p.alarmDate&&p.alarmTime){
+      const ab=document.createElement('span');ab.className='abadge';
+      ab.textContent='🔔 '+p.alarmDate+' '+p.alarmTime;foot.appendChild(ab);
+    }
+    // 타이머 배지
+    if(p.timerEnd&&p.timerEnd>0){
+      const tb=document.createElement('span');
+      const remain=p.timerEnd-now;
+      if(remain>0){
+        const h=Math.floor(remain/3600000);const m=Math.floor((remain%3600000)/60000);const s=Math.floor((remain%60000)/1000);
+        tb.className='timer-badge';tb.textContent='⏱️ '+(h>0?h+'시간 ':'')+m+'분 '+s+'초';
+      }else{
+        tb.className='timer-badge expired';tb.textContent='⏱️ 시간 종료!';
+      }
+      foot.appendChild(tb);
+    }
+    // 읽음 목록
+    if(readers.length>0){
+      const rb=document.createElement('span');rb.className='read-badge';
+      rb.innerHTML='<span class="read-check">✓✓</span> '+readers.map(function(r){return esc(r.name||'익명');}).join(', ');
+      foot.appendChild(rb);
+    }
+    post.appendChild(foot);
+    post.appendChild(buildCommentSection('board',p));
     list.appendChild(post);
   });
 }
+
+// 게시판 알람 스케줄
+function scheduleBoardAlarms(){
+  Object.values(boardAlarmTimers).forEach(function(t){clearTimeout(t);});
+  boardAlarmTimers={};
+  boardPosts.forEach(function(p){
+    if(!p.alarmDate||!p.alarmTime)return;
+    const t=new Date(p.alarmDate+'T'+p.alarmTime+':00');
+    const delay=t-new Date();
+    if(delay<=0)return;
+    boardAlarmTimers[p.id]=setTimeout(function(){
+      startTabBlink('⏰ '+p.title);
+      flashScreen();
+      if(Notification.permission==='granted')new Notification('⏰ 알람',{body:p.title});
+    },delay);
+  });
+}
+
+// 보관함 탭 전환
+function setBoardView(v){
+  boardView=v;
+  document.getElementById('btab-all').classList.toggle('on',v==='all');
+  document.getElementById('btab-archive').classList.toggle('on',v==='archive');
+  renderBoard();
+}
+
+// 타이머 카운트다운 (1초마다 갱신)
+setInterval(function(){
+  if(document.getElementById('page-board').classList.contains('on')){
+    const hasTmr=boardPosts.some(function(p){return p.timerEnd&&p.timerEnd>Date.now();});
+    if(hasTmr)renderBoard();
+  }
+},1000);
+function buildBoardSwatches(){
+  const bgColors=[{n:'기본',h:'#263046'},{n:'남색',h:'#1e3a5f'},{n:'초록',h:'#1a3a2a'},{n:'빨강',h:'#3f1d1d'},{n:'보라',h:'#2e1d3f'},{n:'노랑',h:'#3a360a'},{n:'회색',h:'#2a2a2a'},{n:'흰',h:'#f1f5f9'}];
+  const txtColors=[{n:'기본',h:'#e2e8f0'},{n:'노랑',h:'#fde047'},{n:'빨강',h:'#fca5a5'},{n:'초록',h:'#86efac'},{n:'하늘',h:'#7dd3fc'},{n:'주황',h:'#fdba74'},{n:'보라',h:'#d8b4fe'},{n:'검정',h:'#1e293b'}];
+  ['bf-bgswatches','bf-textswatches'].forEach(function(id,isText){
+    const colors=isText?txtColors:bgColors;
+    const curVal=isText?bfTextColor:bfBgColor;
+    const cont=document.getElementById(id);cont.innerHTML='';
+    colors.forEach(function(c){
+      const sw=document.createElement('div');sw.className='csw'+(c.h===curVal?' on':'');
+      sw.style.background=c.h;sw.title=c.n;sw.dataset.hex=c.h;sw.dataset.type=isText?'text':'bg';
+      sw.addEventListener('click',function(){
+        if(isText)bfTextColor=c.h; else bfBgColor=c.h;
+        cont.querySelectorAll('.csw').forEach(function(s){s.classList.toggle('on',s.dataset.hex===c.h);});
+      });
+      cont.appendChild(sw);
+    });
+  });
+}
+
 function openBoardAdd(){
   editBoardId=null;
   document.getElementById('board-modal-ttl').textContent='게시글 작성';
@@ -1736,6 +1971,18 @@ function openBoardAdd(){
   document.getElementById('bf-pw-on').checked=false;
   document.getElementById('bf-pw').value='';
   document.getElementById('bf-pw-row').style.display='none';
+  document.getElementById('bf-alarm-on').checked=false;
+  document.getElementById('bf-alarm-row').style.display='none';
+  document.getElementById('bf-alarm-date').value=ds(new Date());
+  document.getElementById('bf-alarm-time').value='';
+  document.getElementById('bf-timer-on').checked=false;
+  document.getElementById('bf-timer-row').style.display='none';
+  document.getElementById('bf-timer-h').value='0';
+  document.getElementById('bf-timer-m').value='30';
+  document.getElementById('bf-archive').checked=false;
+  document.getElementById('bf-trash-flag').checked=false;
+  bfBgColor='#263046';bfTextColor='#e2e8f0';
+  buildBoardSwatches();
   resetAttachLinks();
   document.getElementById('btn-board-save').onclick=function(){doSaveBoard();};
   document.getElementById('ov-board').classList.add('on');
@@ -1751,6 +1998,18 @@ function doEditBoard(id){
   document.getElementById('bf-pw-on').checked=!!p.password;
   document.getElementById('bf-pw').value=p.password||'';
   document.getElementById('bf-pw-row').style.display=p.password?'block':'none';
+  document.getElementById('bf-alarm-on').checked=!!p.alarmDate;
+  document.getElementById('bf-alarm-row').style.display=p.alarmDate?'block':'none';
+  document.getElementById('bf-alarm-date').value=p.alarmDate||ds(new Date());
+  document.getElementById('bf-alarm-time').value=p.alarmTime||'';
+  document.getElementById('bf-timer-on').checked=!!p.timerEnd;
+  document.getElementById('bf-timer-row').style.display=p.timerEnd?'block':'none';
+  document.getElementById('bf-timer-h').value='0';
+  document.getElementById('bf-timer-m').value='30';
+  document.getElementById('bf-archive').checked=!!p.archived;
+  document.getElementById('bf-trash-flag').checked=false;
+  bfBgColor=p.bgColor||'#263046';bfTextColor=p.textColor||'#e2e8f0';
+  buildBoardSwatches();
   loadAttachLinks(p.attachLinks||[]);
   document.getElementById('btn-board-save').onclick=function(){doSaveBoard();};
   document.getElementById('ov-board').classList.add('on');
@@ -1772,20 +2031,40 @@ function doSaveBoard(){
   const pwOn=document.getElementById('bf-pw-on').checked;
   const password=pwOn?document.getElementById('bf-pw').value.trim():'';
   if(pwOn&&!password){alert('비밀번호를 입력해주세요.');return;}
+  const alarmOn=document.getElementById('bf-alarm-on').checked;
+  const alarmDate=alarmOn?document.getElementById('bf-alarm-date').value:'';
+  const alarmTime=alarmOn?document.getElementById('bf-alarm-time').value:'';
+  const timerOn=document.getElementById('bf-timer-on').checked;
+  const timerH=parseInt(document.getElementById('bf-timer-h').value)||0;
+  const timerM=parseInt(document.getElementById('bf-timer-m').value)||0;
+  const timerEnd=timerOn?Date.now()+(timerH*3600+timerM*60)*1000:0;
+  const archived=document.getElementById('bf-archive').checked;
+  const trashFlag=document.getElementById('bf-trash-flag').checked;
   const author=myName||'익명';
-  if(body.length>700000){alert('내용(특히 이미지)이 너무 큽니다. 이미지를 줄이거나 개수를 줄여주세요.');return;}
+  if(body.length>700000){alert('내용이 너무 큽니다.');return;}
   const links=[...attachLinks];
   if(editBoardId!==null){
     const idx=boardPosts.findIndex(function(p){return p.id===editBoardId;});
     if(idx!==-1){
       const orig=boardPosts[idx];
-      boardPosts[idx]={id:editBoardId,title,body,forceBlink,password,attachLinks:links,author:orig.author||author,editedBy:author,ts:orig.ts||Date.now(),comments:orig.comments||{}};
+      boardPosts[idx]={id:editBoardId,title,body,forceBlink,password,attachLinks:links,
+        bgColor:bfBgColor,textColor:bfTextColor,alarmDate,alarmTime,timerEnd,archived,
+        author:orig.author||author,editedBy:author,ts:orig.ts||Date.now(),comments:orig.comments||{},reads:orig.reads||{}};
+      if(trashFlag){
+        moveToTrash('board',boardPosts[idx]);
+        boardPosts.splice(idx,1);
+      }
     }
   }else{
     const newId='b'+Date.now();
-    boardPosts.push({id:newId,title,body,forceBlink,password,attachLinks:links,author,ts:Date.now(),comments:{}});
+    const newPost={id:newId,title,body,forceBlink,password,attachLinks:links,
+      bgColor:bfBgColor,textColor:bfTextColor,alarmDate,alarmTime,timerEnd,archived,
+      author,ts:Date.now(),comments:{},reads:{}};
+    if(trashFlag){moveToTrash('board',newPost);}
+    else{boardPosts.push(newPost);}
   }
   saveBoardPosts();
+  scheduleBoardAlarms();
   document.getElementById('ov-board').classList.remove('on');
   renderBoard();
 }
@@ -2065,6 +2344,7 @@ function restoreFromTrash(tid){
     knownBoardIds=newBoard.map(function(p){return p.id;});
     boardPosts=newBoard;
     renderBoard();
+    scheduleBoardAlarms();
   }, function(err){console.error('Firebase 게시판 오류:',err);});
 
   // Firebase 실시간 동기화 - 휴지통
@@ -2319,6 +2599,16 @@ function restoreFromTrash(tid){
 
   // 게시판
   document.getElementById('btn-open-board').addEventListener('click',function(){openBoardAdd();});
+  document.getElementById('btab-all').addEventListener('click',function(){setBoardView('all');});
+  document.getElementById('btab-archive').addEventListener('click',function(){setBoardView('archive');});
+  // 알람 체크박스
+  document.getElementById('bf-alarm-on').addEventListener('change',function(e){
+    document.getElementById('bf-alarm-row').style.display=e.target.checked?'block':'none';
+  });
+  // 타이머 체크박스
+  document.getElementById('bf-timer-on').addEventListener('change',function(e){
+    document.getElementById('bf-timer-row').style.display=e.target.checked?'block':'none';
+  });
   document.getElementById('btn-board-save').addEventListener('click',function(){doSaveBoard();});
   document.getElementById('btn-board-cancel').addEventListener('click',function(){document.getElementById('ov-board').classList.remove('on');});
 
