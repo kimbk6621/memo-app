@@ -82,7 +82,11 @@ body{font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif;background:var
 .wd:first-child{color:#f87171;}
 .wd:nth-child(7){color:#60a5fa;}
 .cald{display:grid;grid-template-columns:0.5fr repeat(5,1fr) 1fr;flex:1;overflow:hidden;}
-.cell{border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:3px 3px;cursor:pointer;display:flex;flex-direction:column;gap:1px;overflow:hidden;min-height:0;background:var(--bg);transition:background .1s;}
+.cell{border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:3px 3px;cursor:pointer;display:flex;flex-direction:column;gap:2px;overflow:hidden;min-height:0;background:var(--bg);transition:background .1s;}
+/* 전·이·다음주/5주 모드 - 칩을 가능한 많이 표시 */
+.cal-week-mode .cell{gap:3px;overflow:hidden;}
+.cal-week-mode .chips{overflow:visible;flex:1;}
+.cal-week-mode .chip,.cal-week-mode .chip-holi,.cal-week-mode .chip-solar,.cal-week-mode .chip-anniv{font-size:17px;padding:2px 5px;margin-bottom:1px;}
 .cell:nth-child(7n){border-right:none;}
 .cell:hover{background:var(--hover);}
 .cell.other{background:#0a1020;cursor:default;}
@@ -91,7 +95,7 @@ body{font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif;background:var
 .cell.thismonth:hover{background:var(--hover);}
 .cell.today{background:#172554!important;}
 .cell.selected{background:#1e3a5f!important;outline:2px solid var(--accent);outline-offset:-2px;}
-.daynum{font-size:13px;font-weight:600;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.daynum{font-size:20px;font-weight:700;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .cell.today .daynum{background:var(--accent);color:#fff!important;}
 .cell.selected .daynum{background:var(--accent2);color:#fff!important;}
 .cell.sun .daynum{color:#f87171;}
@@ -99,11 +103,13 @@ body{font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif;background:var
 .cell.other .daynum{color:var(--dim);}
 /* chips */
 .chips{display:flex;flex-direction:column;gap:1px;overflow:hidden;flex:1;}
-.chip{font-size:11px;padding:1px 4px;border-radius:2px;border-left:3px solid;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;background:rgba(255,255,255,.05);}
-.chip-holi{font-size:11px;padding:1px 3px;border-radius:2px;color:#fca5a5;background:rgba(239,68,68,.15);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;}
-.chip-solar{font-size:11px;padding:1px 3px;border-radius:2px;color:#86efac;background:rgba(34,197,94,.12);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;}
-.chip-anniv{font-size:11px;padding:1px 3px;border-radius:2px;color:#fcd34d;background:rgba(234,179,8,.15);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;}
-.morechip{font-size:10px;color:var(--dim);padding:0 3px;flex-shrink:0;}
+.chip{font-size:16px;padding:1px 4px;border-radius:2px;border-left:3px solid;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;background:rgba(255,255,255,.05);}
+.chip.chip-blink{animation:chipblink 1s ease-in-out infinite;}
+@keyframes chipblink{0%,100%{opacity:1;}50%{opacity:.25;}}
+.chip-holi{font-size:16px;padding:1px 3px;border-radius:2px;color:#fca5a5;background:rgba(239,68,68,.15);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;}
+.chip-solar{font-size:16px;padding:1px 3px;border-radius:2px;color:#86efac;background:rgba(34,197,94,.12);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;}
+.chip-anniv{font-size:16px;padding:1px 3px;border-radius:2px;color:#fcd34d;background:rgba(234,179,8,.15);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;}
+.morechip{font-size:14px;color:var(--dim);padding:0 3px;flex-shrink:0;}
 /* memo panel */
 .memp{flex:1;display:flex;flex-direction:column;overflow:hidden;}
 .memh{display:flex;align-items:center;gap:6px;padding:9px 12px;border-bottom:1px solid var(--border);background:var(--panel);flex-shrink:0;flex-wrap:wrap;}
@@ -713,7 +719,7 @@ const COLORS=[
   {n:'핑크',h:'#ec4899'},{n:'하늘',h:'#06b6d4'},{n:'민트',h:'#14b8a6'},{n:'회색',h:'#94a3b8'}
 ];
 const TEXT_COLORS=[
-  {n:'기본',h:'#e2e8f0'},{n:'빨강',h:'#fca5a5'},{n:'주황',h:'#fdba74'},{n:'노랑',h:'#fde047'},
+  {n:'흰색',h:'#ffffff'},{n:'빨강',h:'#fca5a5'},{n:'주황',h:'#fdba74'},{n:'노랑',h:'#fde047'},
   {n:'초록',h:'#86efac'},{n:'하늘',h:'#7dd3fc'},{n:'보라',h:'#d8b4fe'},{n:'핑크',h:'#f9a8d4'},{n:'검정',h:'#1e293b'}
 ];
 const BG_COLORS=[
@@ -930,6 +936,9 @@ function renderCal(){
   const cont=document.getElementById('cal-days');
   cont.innerHTML='';
   cont.style.gridTemplateRows='repeat('+totalRows+',1fr)';
+  // 주 모드에서 칩 크게 표시 클래스 적용
+  if(calWeekRange!==0){cont.classList.add('cal-week-mode');}
+  else{cont.classList.remove('cal-week-mode');}
 
   let cur=new Date(rStart), curMKey=-1;
   for(let i=0;i<totalRows*7;i++){
@@ -961,15 +970,17 @@ function renderCal(){
         c.className=s.t==='holi'?'chip-holi':s.t==='solar'?'chip-solar':'chip-anniv';
         c.textContent=s.l;c.title=s.l;chips.appendChild(c);
       });
-      // 메모 칩
+      // 메모 칩 - 주 범위 모드에서는 칸이 크니까 최대한 표시
       const dm2=dmap[dstr]||[];
-      const max=2;
+      // calWeekRange 0=월별(3개), 3=3주(최대 8개), 5=5주(최대 5개)
+      const max=calWeekRange===0?3:calWeekRange===3?8:5;
       dm2.slice(0,max).forEach(m=>{
-        const c=document.createElement('div');c.className='chip';
+        const c=document.createElement('div');
+        c.className='chip'+(m.forceBlink?' chip-blink':'');
         c.style.borderLeftColor=m.color||'#3b82f6';c.style.color=m.color||'#3b82f6';
         c.textContent=m.title||'(제목없음)';c.title=m.title||'';chips.appendChild(c);
       });
-      if(dm2.length>max){const mc=document.createElement('div');mc.className='morechip';mc.textContent='+'+(dm2.length-max)+'개';chips.appendChild(mc);}
+      if(dm2.length>max){const mc=document.createElement('div');mc.className='morechip';mc.textContent='+'+(dm2.length-max)+'개 더';chips.appendChild(mc);}
       cell.appendChild(chips);
 
       cell.addEventListener('click',()=>{
