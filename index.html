@@ -95,7 +95,7 @@ body{font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif;background:var
 .cell.thismonth:hover{background:var(--hover);}
 .cell.today{background:#172554!important;}
 .cell.selected{background:#1e3a5f!important;outline:2px solid var(--accent);outline-offset:-2px;}
-.daynum{font-size:20px;font-weight:700;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.daynum{font-size:20px;font-weight:700;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .cell.today .daynum{background:var(--accent);color:#fff!important;}
 .cell.selected .daynum{background:var(--accent2);color:#fff!important;}
 .cell.sun .daynum{color:#f87171;}
@@ -780,7 +780,7 @@ const savedPw = localStorage.getItem('app_pw');
 
 if(savedPw === APP_PW){
   // 이미 인증된 기기 → 비번 화면 스킵, Firebase 바로 연결
-  authOverlay.innerHTML = '<div style="font-size:32px">📝</div><div style="color:#e2e8f0;font-size:15px;font-weight:600;">개인 메모앱</div><div style="color:#94a3b8;font-size:12px;" id="auth-status-msg">연결 중...</div>';
+  authOverlay.innerHTML = '<div style="font-size:20px">📝</div><div style="color:#e2e8f0;font-size:15px;font-weight:600;">개인 메모앱</div><div style="color:#94a3b8;font-size:12px;" id="auth-status-msg">연결 중...</div>';
 }else{
   // 처음 접속 → 비밀번호 입력창 표시
   authOverlay.innerHTML =
@@ -831,7 +831,7 @@ if(savedPw === APP_PW){
         // 비번 화면 → 연결 중 화면으로 전환
         authOverlay.innerHTML =
           '<div style="font-size:32px">📝</div>'+
-          '<div style="color:#e2e8f0;font-size:15px;font-weight:600;">개인 메모앱</div>'+
+          '<div style="color:#e2e8f0;font-size:15px;font-weight:600;">HISYS</div>'+
           '<div style="color:#94a3b8;font-size:12px;" id="auth-status-msg">연결 중...</div>';
         startFirebaseAuth();
       }else{
