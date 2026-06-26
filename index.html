@@ -2,6 +2,10 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>🖥️ HISYS</title>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -369,6 +373,114 @@ input[type=range]{accent-color:var(--accent);}
 #screen-flash{position:fixed;inset:0;pointer-events:none;z-index:9999;background:rgba(59,130,246,0);transition:background .15s;}
 #screen-flash.flashing{animation:screenflash 0.6s ease-out 3;}
 @keyframes screenflash{0%{background:rgba(59,130,246,0);}50%{background:rgba(59,130,246,.35);}100%{background:rgba(59,130,246,0);}}
+/* ══ 태블릿 (900px 이하) ══ */
+@media(max-width:900px){
+  .calp{width:50%;}
+  .topbar{padding:6px 10px;gap:6px;}
+  .search-input{width:150px;}
+  .search-input:focus{width:190px;}
+  .tbtn{font-size:10px;padding:4px 7px;}
+  .maintabs{padding:0 8px;}
+  .mtab{font-size:12px;padding:7px 10px;}
+}
+
+/* ══ 폰 (640px 이하) ══ */
+@media(max-width:640px){
+  /* 기본 레이아웃 */
+  body{height:100dvh;}
+  .topbar{padding:5px 8px;gap:5px;flex-wrap:nowrap;overflow-x:auto;}
+  .topbar-title{font-size:14px;white-space:nowrap;}
+  .search-wrap{flex:1;min-width:0;}
+  .search-input{width:100%;font-size:13px;}
+  .tbtn{font-size:10px;padding:3px 6px;white-space:nowrap;}
+  #online-users{display:none;}
+
+  /* 메인탭 → 상단 스크롤 탭 */
+  .maintabs{padding:0;overflow-x:auto;-webkit-overflow-scrolling:touch;gap:0;border-bottom:2px solid var(--border);}
+  .maintabs::-webkit-scrollbar{display:none;}
+  .mtab{font-size:13px;padding:8px 12px;white-space:nowrap;border-bottom:none;}
+  .mtab.on{border-bottom:3px solid var(--accent);}
+
+  /* 달력+메모 페이지: 세로 분할 */
+  .page#page-cal{flex-direction:column;}
+  .main{flex-direction:column;overflow-y:auto;}
+
+  /* 달력: 전체 너비, 높이 자동 */
+  .calp{width:100%;flex-shrink:0;border-right:none;border-bottom:1px solid var(--border);max-height:55dvh;}
+  .calp.hidden{max-height:0;overflow:hidden;border-bottom:none;}
+  .calh-row1{gap:4px;}
+  .calml{font-size:11px;}
+  .calnav{width:22px;height:22px;font-size:12px;}
+  .btnadd{font-size:11px;padding:4px 8px;}
+  .wrtab{font-size:10px;padding:2px 5px;}
+  .daynum{font-size:14px;width:22px;height:22px;}
+  .chip,.chip-holi,.chip-solar,.chip-anniv{font-size:10px;}
+  .cal-week-mode .chip,.cal-week-mode .chip-holi,.cal-week-mode .chip-solar,.cal-week-mode .chip-anniv{font-size:11px;}
+
+  /* 메모 패널: 전체 너비 */
+  .memp{width:100%;flex:1;min-height:0;}
+  .memh{padding:7px 10px;gap:6px;flex-wrap:nowrap;overflow-x:auto;}
+  .memhdate{font-size:13px;white-space:nowrap;}
+  .vtabs{gap:2px;}
+  .vtab{font-size:11px;padding:4px 7px;}
+  .meml{padding:8px;}
+  .meml.grid-mode{grid-template-columns:repeat(2,1fr);gap:6px;}
+  .cal-hidden-mode .meml.grid-mode{grid-template-columns:repeat(2,1fr);}
+
+  /* 메모 카드 */
+  .mctitle{font-size:14px;}
+  .mcbody{font-size:13px;}
+  .mcard{padding:8px 10px;}
+  .mcard.compact .mctitle{font-size:11px;}
+  .mcard.compact .mcbody{font-size:10px;}
+
+  /* 달력 토글 버튼 */
+  .cal-toggle-btn{font-size:10px;padding:3px 6px;}
+
+  /* 채팅 */
+  .chatbubble{font-size:14px;padding:8px 11px;}
+  .chatinput{font-size:14px;padding:8px 13px;}
+  .chatsend{padding:8px 14px;font-size:13px;}
+  .chathead{padding:6px 10px;}
+
+  /* 게시판 */
+  .boardlist{grid-template-columns:repeat(2,1fr);}
+  .bptitle{font-size:13px;}
+  .bpbody{font-size:12px;}
+  .boardtoolbar{padding:7px 10px;}
+
+  /* 모달 */
+  .modal{width:95vw!important;max-height:88dvh;padding:16px;}
+  .modal h2{font-size:15px;}
+  .fi,.fta{font-size:14px;padding:8px 10px;}
+  .fr2{grid-template-columns:1fr;}
+  .bsav,.bcnl{padding:8px 14px;font-size:13px;}
+
+  /* 승부예측 */
+  #predict-list{grid-template-columns:1fr!important;}
+  .predict-title{font-size:15px;}
+  .predict-table{font-size:14px;}
+
+  /* 자료실 */
+  #board2-list{padding:8px!important;}
+
+  /* 휴지통/기념일 모달 */
+  .trash-item{flex-direction:column;align-items:flex-start;gap:6px;}
+  .trash-item .btn-cancel,.trash-item .btn-del{width:100%;}
+}
+
+/* ══ 매우 작은 폰 (380px 이하) ══ */
+@media(max-width:380px){
+  .maintabs{gap:0;}
+  .mtab{font-size:11px;padding:7px 8px;}
+  .boardlist{grid-template-columns:1fr;}
+}/* 폰에서 숨기기 */
+@media(max-width:640px){
+  .hide-mobile{display:none!important;}
+  .topbar{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .topbar::-webkit-scrollbar{display:none;}
+  #sync-status{font-size:9px;white-space:nowrap;}
+}
 </style>
 </head>
 <body>
@@ -381,8 +493,8 @@ input[type=range]{accent-color:var(--accent);}
     <input class="search-input" id="search-input" type="text" placeholder="🔍 메모·게시판·채팅 검색...">
     <button class="search-clear hide" id="search-clear">✕</button>
   </div>
-  <button class="tbtn" id="btn-anniv">🎂 기념일 관리</button>
-  <button class="tbtn" id="btn-trash">🗑️ 휴지통 <span class="badge hide" id="trash-badge">0</span></button>
+  <button class="tbtn hide-mobile" id="btn-anniv">🎂 기념일 관리</button>
+  <button class="tbtn" id="btn-trash">🗑️ <span class="hide-mobile">휴지통 </span><span class="badge hide" id="trash-badge">0</span></button>
   <button class="tbtn" id="btn-myname">👤 <span id="myname-label">이름설정</span></button>
   <span id="sync-status" style="font-size:11px;color:var(--dim);">☁️ 연결 중...</span>
   <div id="online-users" style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;"></div>
@@ -2481,19 +2593,26 @@ function restoreFromTrash(tid){
 
   // 달력 토글
   let calVisible=localStorage.getItem('calVisible')!=='0';
+  // 폰에서는 기본 달력 숨김
+  const isMobile=window.innerWidth<=640;
+  if(isMobile && localStorage.getItem('calVisible')===null){
+    calVisible=false;
+  }
+
   function applyCalToggle(){
     const calp=document.getElementById('page-cal').querySelector('.calp');
     const main=document.getElementById('page-cal').querySelector('.main');
     const btn=document.getElementById('btn-cal-toggle');
+    const mobile=window.innerWidth<=640;
     if(calVisible){
       calp.classList.remove('hidden');
       main.classList.remove('cal-hidden-mode');
-      btn.textContent='◀ 달력';
+      btn.textContent=mobile?'📅':'◀ 달력';
       btn.classList.remove('cal-hidden');
     }else{
       calp.classList.add('hidden');
       main.classList.add('cal-hidden-mode');
-      btn.textContent='▶ 달력';
+      btn.textContent=mobile?'📅':'▶ 달력';
       btn.classList.add('cal-hidden');
     }
     localStorage.setItem('calVisible',calVisible?'1':'0');
@@ -2738,7 +2857,7 @@ function restoreFromTrash(tid){
 
   // 알람 주기 체크
   setInterval(function(){renderMemos();},60000);
-  window.addEventListener('resize',function(){renderCal();});
+  window.addEventListener('resize',function(){renderCal();applyCalToggle();});
 })();
 </script>
 </body>
