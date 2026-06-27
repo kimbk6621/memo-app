@@ -845,6 +845,7 @@ const SOLAR={'01-06':'소한','01-20':'대한','02-04':'입춘','02-19':'우수'
 // ── 상태 ──
 let memos=[], annivs=[], cy, cm, selDate, curView='all', editId=null, selColor=COLORS[0].h, selTextColor=TEXT_COLORS[0].h, selBgColor=BG_COLORS[0].h, alarmTimers={};
 let calWeekRange=0; // 0=월별(기본), 3=전이다음주, 5=5주
+let weekOffset=0;   // 주 모드에서 오늘 기준 ±N주 오프셋
 let myName=localStorage.getItem('myName')||'';
 let knownMemoIds=null; // 새 글 알림 감지용 (최초 로드 이후의 ids만 추적)
 let flashNewMemoId=null; // 방금 도착한 새 글 강조용
@@ -1029,18 +1030,22 @@ function renderCal(){
     document.getElementById('cal-label').textContent=
       prevY+'년 '+mn[prevM]+' 마지막주 ~ '+nextY+'년 '+mn[nextM]+' 2주';
   }else{
-    // 주 단위 모드: 이번주 중심 N주
+    // 주 단위 모드: 오늘 기준 + weekOffset주 이동
     const today=new Date();
     const thisWeekSun=new Date(today);
-    thisWeekSun.setDate(today.getDate()-today.getDay());
+    thisWeekSun.setDate(today.getDate()-today.getDay()+weekOffset*7);
     const before=Math.floor((calWeekRange-1)/2);
     const after=calWeekRange-1-before;
     rStart=new Date(thisWeekSun);
     rStart.setDate(thisWeekSun.getDate()-before*7);
     nEnd=new Date(thisWeekSun);
     nEnd.setDate(thisWeekSun.getDate()+after*7+6);
+    // 헤더: 날짜 범위 표시
+    const startLbl=(rStart.getMonth()+1)+'/'+rStart.getDate();
+    const endLbl=(nEnd.getMonth()+1)+'/'+nEnd.getDate();
+    const offsetLbl=weekOffset===0?'(이번주)':weekOffset>0?'(+'+weekOffset+'주)':'('+weekOffset+'주)';
     document.getElementById('cal-label').textContent=
-      calWeekRange===3?'전주 · 이번주 · 다음주':calWeekRange+'주 표시';
+      (calWeekRange===3?'전·이·다음주':calWeekRange+'주')+' '+startLbl+'~'+endLbl+' '+offsetLbl;
   }
 
   const totalRows=Math.ceil(((nEnd-rStart)/86400000+1)/7);
@@ -1059,7 +1064,8 @@ function renderCal(){
     const isThis=(dy===cy&&dm===cm);
     const isPrev=(dy===prevY&&dm===prevM);
     const isNext=(dy===nextY&&dm===nextM);
-    const isOther=!isThis&&!isPrev&&!isNext;
+    // 주 모드에서는 모든 날짜에 메모 표시 (isOther 없음)
+    const isOther=calWeekRange===0?(!isThis&&!isPrev&&!isNext):false;
 
     const cell=document.createElement('div');
     cell.className='cell'+(isOther?' other':'')+(isThis?' thismonth':'')+(dow===0?' sun':dow===6?' sat':'')+(dstr===todayStr?' today':'')+(dstr===selDate?' selected':'');
@@ -2626,17 +2632,16 @@ function restoreFromTrash(tid){
   // 달력 이동
   document.getElementById('btn-prev').addEventListener('click',function(){
     if(calWeekRange===0){cm--;if(cm<0){cm=11;cy--;}}
-    // 주 모드는 renderCal 자체가 오늘 기준이라 ‹›는 달만 이동 (참고용)
-    else{cm--;if(cm<0){cm=11;cy--;}}
+    else{weekOffset--;} // 주 모드: 한 주 이전
     renderCal();
   });
   document.getElementById('btn-next').addEventListener('click',function(){
     if(calWeekRange===0){cm++;if(cm>11){cm=0;cy++;}}
-    else{cm++;if(cm>11){cm=0;cy++;}}
+    else{weekOffset++;} // 주 모드: 한 주 다음
     renderCal();
   });
-  document.getElementById('btn-today').addEventListener('click',function(){goToToday();});
-  document.getElementById('mem-date-label').addEventListener('click',function(){goToToday();});
+  document.getElementById('btn-today').addEventListener('click',function(){weekOffset=0;goToToday();});
+  document.getElementById('mem-date-label').addEventListener('click',function(){weekOffset=0;goToToday();});
 
   // 메모 추가 버튼
   document.getElementById('btn-open-add').addEventListener('click',function(){openAdd();});
@@ -2660,6 +2665,7 @@ function restoreFromTrash(tid){
   document.querySelectorAll('.wrtab').forEach(function(btn){
     btn.addEventListener('click',function(){
       calWeekRange=parseInt(btn.dataset.weeks);
+      weekOffset=0; // 탭 바꾸면 오늘 기준으로 초기화
       document.querySelectorAll('.wrtab').forEach(function(b){b.classList.remove('on');});
       btn.classList.add('on');
       renderCal();
