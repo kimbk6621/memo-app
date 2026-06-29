@@ -164,10 +164,10 @@ body{font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif;background:var
 .fi:focus,.fta:focus{outline:none;border-color:var(--accent);}
 .fta{min-height:80px;resize:vertical;}
 .fr2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.cswatches{display:flex;gap:5px;flex-wrap:wrap;margin-top:3px;}
-.csw{width:24px;height:24px;border-radius:5px;cursor:pointer;border:3px solid transparent;transition:transform .1s;}
-.csw:hover{transform:scale(1.2);}
-.csw.on{border-color:#fff;transform:scale(1.15);}
+.cswatches{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px;}
+.csw{width:52px;height:34px;border-radius:6px;cursor:pointer;border:3px solid transparent;transition:transform .1s;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:rgba(0,0,0,.8);text-shadow:0 1px 2px rgba(255,255,255,.6);letter-spacing:-.2px;text-align:center;padding:0 2px;word-break:keep-all;}
+.csw:hover{transform:scale(1.08);}
+.csw.on{border-color:#fff;transform:scale(1.08);box-shadow:0 0 6px rgba(255,255,255,.5);}
 .chkl{display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;color:var(--sub);}
 .chkl input{accent-color:var(--accent);}
 .mbtns{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;}
@@ -593,7 +593,7 @@ input[type=range]{accent-color:var(--accent);}
       </div>
       <button class="btnadd" id="btn-open-board2">+ 글쓰기</button>
     </div>
-    <div id="board2-list" style="flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:4px;"></div>
+    <div id="board2-list" style="flex:1;overflow-y:auto;padding:8px;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;align-items:start;"></div>
   </div>
 </div>
 
@@ -832,9 +832,16 @@ input[type=range]{accent-color:var(--accent);}
 <script>
 // ── 상수 ──
 const COLORS=[
-  {n:'파랑',h:'#3b82f6'},{n:'보라',h:'#8b5cf6'},{n:'초록',h:'#22c55e'},
-  {n:'노랑',h:'#eab308'},{n:'주황',h:'#f97316'},{n:'빨강',h:'#ef4444'},
-  {n:'핑크',h:'#ec4899'},{n:'하늘',h:'#06b6d4'},{n:'민트',h:'#14b8a6'},{n:'회색',h:'#94a3b8'}
+  {n:'휴가',h:'#facc15'},    // 노랑
+  {n:'입출고',h:'#fb923c'},  // 오렌지
+  {n:'컵',h:'#4ade80'},      // 형광초록
+  {n:'강조',h:'#ef4444'},    // 빨강
+  {n:'알림',h:'#c084fc'},    // 밝은 보라
+  {n:'기타',h:'#60a5fa'},    // 파랑
+  {n:'핑크',h:'#f472b6'},    // 핑크
+  {n:'하늘',h:'#22d3ee'},    // 형광하늘
+  {n:'민트',h:'#2dd4bf'},    // 민트
+  {n:'회색',h:'#94a3b8'}     // 회색
 ];
 const TEXT_COLORS=[
   {n:'흰색',h:'#ffffff'},{n:'빨강',h:'#fca5a5'},{n:'주황',h:'#fdba74'},{n:'노랑',h:'#fde047'},
@@ -1103,10 +1110,10 @@ function renderCal(){
       dm2.slice(0,max).forEach(m=>{
         const c=document.createElement('div');
         c.className='chip'+(m.forceBlink?' chip-blink':'');
-        c.style.borderLeftColor=m.color||'#3b82f6';
-        // 어두운 배경에서 잘 보이도록 밝은 흰색 계열로 표시
-        c.style.color='#f1f5f9';
-        c.style.background='rgba(255,255,255,.1)';
+        const chipColor=m.color||'#60a5fa';
+        c.style.borderLeftColor=chipColor;
+        c.style.color=chipColor;  // 테두리색과 동일
+        c.style.background='rgba(0,0,0,.25)';
         c.textContent=m.title||'(제목없음)';c.title=m.title||'';chips.appendChild(c);
       });
       if(dm2.length>max){const mc=document.createElement('div');mc.className='morechip';mc.textContent='+'+(dm2.length-max)+'개 더';chips.appendChild(mc);}
@@ -1354,6 +1361,13 @@ function buildSwatchGroup(containerId, colorList, getCurrent, setCurrent){
     sw.className='csw'+(c.h===getCurrent()?' on':'');
     sw.style.background=c.h;sw.title=c.n;
     sw.dataset.hex=c.h;
+    // 색상명 텍스트 표시 - 밝은색이면 어두운 글씨, 어두운색이면 밝은 글씨
+    sw.textContent=c.n;
+    const rgb=parseInt(c.h.slice(1),16);
+    const r=(rgb>>16)&255,g=(rgb>>8)&255,b=rgb&255;
+    const lum=0.299*r+0.587*g+0.114*b;
+    sw.style.color=lum>140?'rgba(0,0,0,.8)':'rgba(255,255,255,.9)';
+    sw.style.textShadow=lum>140?'none':'0 1px 2px rgba(0,0,0,.5)';
     sw.addEventListener('click',function(){
       setCurrent(c.h);
       cont.querySelectorAll('.csw').forEach(function(s){s.classList.toggle('on',s.dataset.hex===c.h);});
@@ -1535,14 +1549,14 @@ function renderBoard2(){
     row.addEventListener('click',function(){
       if(!expanded){
         detail=document.createElement('div');
-        detail.style.cssText='padding:10px 12px;background:var(--bg);border-radius:0 0 7px 7px;border-left:3px solid var(--accent2);margin-top:-4px;';
+        detail.style.cssText='grid-column:1/-1;padding:10px 12px;background:var(--bg);border-radius:7px;border-left:3px solid var(--accent2);';
         if(p.body){const bd=document.createElement('div');bd.className='bpbody';bd.innerHTML=p.body;
           bd.querySelectorAll('img').forEach(function(img){img.addEventListener('click',function(){openImgViewer(img.src);});});
           detail.appendChild(bd);}
         const aS=buildAttachSection(p.attachLinks);if(aS)detail.appendChild(aS);
         detail.appendChild(buildCommentSection('board2',p));
-        row.after(detail);expanded=true;row.style.borderRadius='7px 7px 0 0';
-      }else{if(detail){detail.remove();detail=null;}expanded=false;row.style.borderRadius='7px';}
+        row.after(detail);expanded=true;row.style.background='var(--hover)';
+      }else{if(detail){detail.remove();detail=null;}expanded=false;row.style.background='var(--card)';}
     });
     list.appendChild(row);
   });
@@ -2222,7 +2236,7 @@ setInterval(function(){
 },1000);
 function buildBoardSwatches(){
   const bgColors=[{n:'기본',h:'#263046'},{n:'남색',h:'#1e3a5f'},{n:'초록',h:'#1a3a2a'},{n:'빨강',h:'#3f1d1d'},{n:'보라',h:'#2e1d3f'},{n:'노랑',h:'#3a360a'},{n:'회색',h:'#2a2a2a'},{n:'흰',h:'#f1f5f9'}];
-  const txtColors=[{n:'기본',h:'#e2e8f0'},{n:'노랑',h:'#fde047'},{n:'빨강',h:'#fca5a5'},{n:'초록',h:'#86efac'},{n:'하늘',h:'#7dd3fc'},{n:'주황',h:'#fdba74'},{n:'보라',h:'#d8b4fe'},{n:'검정',h:'#1e293b'}];
+  const txtColors=[{n:'흰색',h:'#ffffff'},{n:'노랑',h:'#fde047'},{n:'빨강',h:'#fca5a5'},{n:'초록',h:'#86efac'},{n:'하늘',h:'#7dd3fc'},{n:'주황',h:'#fdba74'},{n:'보라',h:'#d8b4fe'},{n:'검정',h:'#1e293b'}];
   ['bf-bgswatches','bf-textswatches'].forEach(function(id,isText){
     const colors=isText?txtColors:bgColors;
     const curVal=isText?bfTextColor:bfBgColor;
@@ -2230,6 +2244,11 @@ function buildBoardSwatches(){
     colors.forEach(function(c){
       const sw=document.createElement('div');sw.className='csw'+(c.h===curVal?' on':'');
       sw.style.background=c.h;sw.title=c.n;sw.dataset.hex=c.h;sw.dataset.type=isText?'text':'bg';
+      sw.textContent=c.n;
+      const rgb=parseInt(c.h.slice(1),16);const r=(rgb>>16)&255,g=(rgb>>8)&255,b=rgb&255;
+      const lum=0.299*r+0.587*g+0.114*b;
+      sw.style.color=lum>140?'rgba(0,0,0,.8)':'rgba(255,255,255,.9)';
+      sw.style.textShadow=lum>140?'none':'0 1px 2px rgba(0,0,0,.5)';
       sw.addEventListener('click',function(){
         if(isText)bfTextColor=c.h; else bfBgColor=c.h;
         cont.querySelectorAll('.csw').forEach(function(s){s.classList.toggle('on',s.dataset.hex===c.h);});
