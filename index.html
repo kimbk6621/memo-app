@@ -241,7 +241,9 @@ input[type=range]{accent-color:var(--accent);}
 .bptop{display:flex;align-items:flex-start;gap:6px;}
 .bptitle{font-size:13px;font-weight:700;flex:1;word-break:break-all;line-height:1.4;}
 .bpacts{display:flex;gap:2px;flex-shrink:0;}
-.bpbody{margin-top:5px;font-size:12px;color:var(--sub);line-height:1.5;white-space:pre-wrap;max-height:120px;overflow:hidden;}
+.bpbody{margin-top:5px;font-size:12px;color:var(--sub);line-height:1.5;white-space:pre-wrap;max-height:90px;overflow:hidden;cursor:pointer;transition:max-height .3s ease;}
+.bpbody.expanded{max-height:3000px;overflow:visible;}
+.bpbody:not(.expanded)::after{content:'▼ 클릭해서 펼치기';display:block;text-align:center;font-size:10px;color:var(--dim);margin-top:2px;}
 .bpfoot{margin-top:8px;display:flex;gap:8px;align-items:center;font-size:11px;color:var(--dim);}
 
 /* 승부예측 (이름+점수 수기 입력 방식) */
@@ -348,6 +350,7 @@ input[type=range]{accent-color:var(--accent);}
 .board-editable th,.bpbody th{background:rgba(255,255,255,.06);font-weight:700;}
 .bpbody img{max-width:100%;border-radius:6px;margin:6px 0;display:block;cursor:zoom-in;}
 .bpbody table{display:table;width:auto;}
+.bpbody table td,.bpbody table th{color:#111111 !important;font-size:12px;}
 
 /* 첨부 링크 카드 */
 .attach-input-row{display:flex;gap:6px;align-items:center;}
@@ -2162,6 +2165,11 @@ function renderBoard(){
       const bd=document.createElement('div');bd.className='bpbody';bd.innerHTML=p.body;
       if(p.textColor)bd.style.color=p.textColor;
       bd.querySelectorAll('img').forEach(function(img){img.addEventListener('click',function(){openImgViewer(img.src);});});
+      // 클릭 시 펼치기/접기
+      bd.addEventListener('click',function(e){
+        if(e.target.tagName==='IMG'||e.target.tagName==='A')return;
+        bd.classList.toggle('expanded');
+      });
       post.appendChild(bd);
     }
     const attachSec=buildAttachSection(p.attachLinks);
